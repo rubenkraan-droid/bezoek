@@ -136,7 +136,7 @@ function teken(){
       if(g!==vorige){ h += '<div class="groep">'+g+'</div>'; vorige=g; }
       const k = soort(s), b = bezet(s);
       const wie = s.geblokkeerd ? (TOKEN && s.reden ? esc(s.reden) : 'Geen bezoek mogelijk')
-        : s.boekingen.map(x => '<b>'+esc(x.voornaam)+'</b>'+(x.personen>1?' (2)':'')).join(', ') || '';
+        : TOKEN ? s.boekingen.map(x => '<b>'+esc(x.voornaam)+'</b>'+(x.personen>1?' (2)':'')).join(', ') : '';
       const st = {vrij:'Vrij', half:'Nog 1 plek', vol:'Vol', blok:''}[k];
       const kan = TOKEN || (k==='vrij'||k==='half');
       h += '<button class="slot '+k+'" '+(kan?'':'disabled')+' onclick="tik(\''+datum+'\','+s.uur+')">'
@@ -171,7 +171,7 @@ function zetPers(n,el){ keuzePers=n; el.parentNode.querySelectorAll('button').fo
 
 function boekVenster(s){
   open('<h3>Bezoek inplannen</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+', '+tijdTxt(s.uur)+'</p>'
-    + (s.boekingen.length?'<p class="hint">Er komt al: '+s.boekingen.map(x=>esc(x.voornaam)).join(', ')+'</p>':'')
+    + (TOKEN && s.boekingen.length?'<p class="hint">Er komt al: '+s.boekingen.map(x=>esc(x.voornaam)).join(', ')+'</p>':'')
     + '<label for="naam">Je voornaam</label><input id="naam" type="text" autocomplete="given-name" maxlength="30" value="'+esc(opslag.get('naam'))+'">'
     + persKeuze(s)
     + '<label for="tel">Je mobiele nummer</label><div class="tel"><span>06</span><input id="tel" type="tel" inputmode="numeric" autocomplete="tel" maxlength="12" placeholder="12345678" value="'+esc(opslag.get('tel'))+'"></div>'
