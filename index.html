@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Bezoek plannen</title>
+<style>
+:root{
+  --bg:#f6f5f2; --kaart:#fff; --tekst:#1d1d1b; --zacht:#6b6a66; --lijn:#e4e2dc;
+  --groen:#e6f4ea; --groen-r:#2e7d32; --oranje:#fff1dc; --oranje-r:#e07a00;
+  --rood:#fde8e6; --rood-r:#c62828; --grijs:#eceae6; --knop:#1f5fbf;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tekst);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 100px}
+h1{font-size:26px;margin:4px 0 2px}
+.sub{color:var(--zacht);margin:0 0 14px}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--zacht);margin-bottom:14px}
+.legenda span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c);border:2px solid var(--r)}
+.balk{background:#fff7e0;border:2px solid var(--oranje-r);border-radius:12px;padding:12px;margin-bottom:14px;font-weight:600}
+.balk.beheer{background:#e8f0fd;border-color:var(--knop)}
+.balk button{margin-top:8px}
+.dag{background:var(--kaart);border-radius:14px;padding:12px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.dag h2{font-size:19px;margin:2px 4px 10px;text-transform:capitalize}
+.dag h2 small{font-weight:400;color:var(--zacht);text-transform:none}
+.slot{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:2px solid var(--r);background:var(--c);border-radius:10px;padding:12px;margin-top:8px;font:inherit;color:inherit;cursor:pointer;min-height:58px}
+.slot .tijd{font-weight:700;min-width:62px;font-variant-numeric:tabular-nums}
+.slot .wie{flex:1;font-size:16px}
+.slot .wie b{font-weight:600}
+.slot .status{font-size:14px;font-weight:700;color:var(--r);white-space:nowrap}
+.vrij{--c:var(--groen);--r:var(--groen-r)}
+.half{--c:var(--oranje);--r:var(--oranje-r)}
+.vol{--c:var(--rood);--r:var(--rood-r)}
+.blok{--c:var(--grijs);--r:#9e9b94;background:repeating-linear-gradient(135deg,#eceae6 0 10px,#e3e1dc 10px 20px)}
+.slot[disabled]{cursor:default}
+.groep{font-size:13px;color:var(--zacht);margin:12px 4px 0;text-transform:uppercase;letter-spacing:.04em}
+button.groot{display:block;width:100%;padding:15px;border:0;border-radius:12px;background:var(--knop);color:#fff;font-family:inherit;font-weight:700;font-size:18px;line-height:1.2;cursor:pointer}
+button.licht{background:#fff;color:var(--knop);border:2px solid var(--knop)}
+button.rood{background:var(--rood-r)}
+button:disabled{opacity:.5}
+.vast{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+.vast button{max-width:528px;margin:0 auto}
+/* venster */
+.achter{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.achter.open{display:flex}
+.venster{background:#fff;width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.venster h3{margin:0 0 4px;font-size:21px}
+.venster .wanneer{color:var(--zacht);margin:0 0 16px}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=tel]{width:100%;font:inherit;font-size:20px;padding:12px;border:2px solid var(--lijn);border-radius:10px;background:#fff}
+input:focus{outline:none;border-color:var(--knop)}
+.tel{display:flex;align-items:stretch}
+.tel span{display:flex;align-items:center;padding:0 12px;font-size:20px;background:var(--grijs);border:2px solid var(--lijn);border-right:0;border-radius:10px 0 0 10px}
+.tel input{border-radius:0 10px 10px 0}
+.hint{font-size:14px;color:var(--zacht);margin-top:6px}
+.keuze{display:flex;gap:10px}
+.keuze button{flex:1;padding:14px;font-family:inherit;font-weight:600;font-size:18px;border:2px solid var(--lijn);border-radius:10px;background:#fff;cursor:pointer}
+.keuze button.aan{border-color:var(--knop);background:#e8f0fd;color:var(--knop)}
+.fout{color:var(--rood-r);font-weight:600;margin:12px 0 0;min-height:1em}
+.rij{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.item{border:2px solid var(--lijn);border-radius:12px;padding:12px;margin-top:10px}
+.item .kop{font-weight:700}
+.item .knoppen{display:flex;gap:8px;margin-top:10px}
+.item .knoppen>*{flex:1;text-align:center;padding:11px;border-radius:10px;font-family:inherit;font-weight:600;font-size:16px;border:2px solid var(--knop);background:#fff;color:var(--knop);text-decoration:none;cursor:pointer}
+.item .knoppen .rood{border-color:var(--rood-r);color:var(--rood-r);background:#fff}
+.item .knoppen .bel{background:var(--groen-r);border-color:var(--groen-r);color:#fff}
+.goed{text-align:center;padding:10px 0}
+.goed .vink{font-size:54px;line-height:1;color:var(--groen-r)}
+.laden{color:var(--zacht);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bezoek plannen</h1>
+  <p class="sub">Tik op een vrij tijdstip om je bezoek in te plannen.</p>
+  <div class="legenda">
+    <span style="--c:var(--groen);--r:var(--groen-r)">Vrij</span>
+    <span style="--c:var(--oranje);--r:var(--oranje-r)">Nog 1 plek</span>
+    <span style="--c:var(--rood);--r:var(--rood-r)">Vol</span>
+    <span style="--c:var(--grijs);--r:#9e9b94">Geen bezoek</span>
+  </div>
+  <div id="balk"></div>
+  <div id="kalender"><div class="laden">Even laden…</div></div>
+</div>
+<div class="vast" id="vast"><button class="groot licht" onclick="openMijn()">Mijn bezoek wijzigen of afzeggen</button></div>
+
+<div class="achter" id="achter" onclick="if(event.target===this)sluit()"><div class="venster" id="venster"></div></div>
+
+<script>
+const URL_ = 'https://ooqkpazyvohsrdvxfnug.supabase.co/rest/v1/rpc/';
+const KEY = 'sb_publishable_fkVuhCNu_Q0Ze9x5VPee1g_jtzClD0O';
+const TOKEN = new URLSearchParams(location.hash.slice(1)).get('beheer') || null;
+let slots = [], verplaats = null, keuzePers = 1;
+
+async function rpc(naam, args){
+  const r = await fetch(URL_ + naam, {method:'POST', headers:{apikey:KEY,'Content-Type':'application/json'}, body:JSON.stringify(args||{})});
+  const j = await r.json().catch(()=>null);
+  if(!r.ok) throw new Error((j && j.message) || 'Er ging iets mis. Probeer het opnieuw.');
+  return j;
+}
+const opslag = { get(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uurTxt = u => String(u).padStart(2,'0') + ':00';
+const tijdTxt = u => uurTxt(u) + ' – ' + uurTxt(u+1);
+function dagTxt(iso, kort){
+  const d = new Date(iso+'T12:00:00'), v = new Date(); v.setHours(12,0,0,0);
+  const diff = Math.round((d - v)/864e5);
+  const lang = d.toLocaleDateString('nl-NL',{weekday:'long', day:'numeric', month:'long'});
+  if(kort) return (diff===0?'vandaag ':diff===1?'morgen ':'') + lang;
+  return diff===0 ? 'Vandaag <small>'+lang+'</small>' : diff===1 ? 'Morgen <small>'+lang+'</small>' : lang;
+}
+const bezet = s => s.boekingen.reduce((a,b)=>a+b.personen,0);
+function soort(s){ if(s.geblokkeerd) return 'blok'; const b=bezet(s); return b===0?'vrij':b>=s.cap?'vol':'half'; }
+function tel8(v){ let d=String(v||'').replace(/\D/g,''); if(d.length===10 && d.startsWith('06')) d=d.slice(2); return d; }
+
+async function laad(){
+  try{ slots = await rpc('bezoek_overzicht', {p_token:TOKEN}); teken(); }
+  catch(e){ document.getElementById('kalender').innerHTML = '<div class="laden">Kon de kalender niet laden. Controleer je internet en ververs de pagina.</div>'; }
+}
+
+function teken(){
+  const balk = document.getElementById('balk');
+  if(verplaats) balk.innerHTML = '<div class="balk">Kies een nieuw tijdstip voor je bezoek van '+esc(dagTxt(verplaats.datum,true))+' om '+uurTxt(verplaats.uur)+'.<button class="groot licht" onclick="verplaats=null;teken()">Annuleren</button></div>';
+  else if(TOKEN) balk.innerHTML = '<div class="balk beheer">Beheer: tik op een tijdstip om te zien wie er komt, te bellen of het tijdstip te blokkeren.</div>';
+  else balk.innerHTML = '';
+  document.getElementById('vast').style.display = (TOKEN||verplaats) ? 'none' : '';
+  const perDag = {};
+  slots.forEach(s => (perDag[s.datum] ||= []).push(s));
+  let h = '';
+  for(const [datum, lijst] of Object.entries(perDag)){
+    h += '<div class="dag"><h2>'+dagTxt(datum)+'</h2>';
+    let vorige = null;
+    lijst.forEach(s => {
+      const g = s.uur===9 ? 'Ochtend · 1 persoon' : 'Middag en avond · max. 2 personen';
+      if(g!==vorige){ h += '<div class="groep">'+g+'</div>'; vorige=g; }
+      const k = soort(s), b = bezet(s);
+      const wie = s.geblokkeerd ? (TOKEN && s.reden ? esc(s.reden) : 'Geen bezoek mogelijk')
+        : s.boekingen.map(x => '<b>'+esc(x.voornaam)+'</b>'+(x.personen>1?' (2)':'')).join(', ') || '';
+      const st = {vrij:'Vrij', half:'Nog 1 plek', vol:'Vol', blok:''}[k];
+      const kan = TOKEN || (k==='vrij'||k==='half');
+      h += '<button class="slot '+k+'" '+(kan?'':'disabled')+' onclick="tik(\''+datum+'\','+s.uur+')">'
+        + '<span class="tijd">'+uurTxt(s.uur)+'</span><span class="wie">'+wie+'</span><span class="status">'+st+'</span></button>';
+    });
+    h += '</div>';
+  }
+  document.getElementById('kalender').innerHTML = h || '<div class="laden">Geen tijdstippen beschikbaar.</div>';
+}
+
+const V = () => document.getElementById('venster');
+function open(html){ V().innerHTML = html; document.getElementById('achter').classList.add('open'); }
+function sluit(){ document.getElementById('achter').classList.remove('open'); }
+const zoek = (d,u) => slots.find(s => s.datum===d && s.uur===u);
+
+function tik(d,u){
+  const s = zoek(d,u); if(!s) return;
+  if(verplaats) return kiesVerplaats(s);
+  if(TOKEN) return beheerVenster(s);
+  boekVenster(s);
+}
+
+function persKeuze(s, extra){
+  const vrij = s.cap - bezet(s) + (extra||0);
+  keuzePers = 1;
+  if(s.cap===1) return '<p class="hint">In de ochtend kan er 1 persoon tegelijk komen.</p>';
+  return '<label>Met hoeveel personen kom je?</label><div class="keuze">'
+    + '<button type="button" class="aan" onclick="zetPers(1,this)">1 persoon</button>'
+    + '<button type="button" '+(vrij<2?'disabled':'')+' onclick="zetPers(2,this)">2 personen</button></div>'
+    + (vrij<2?'<p class="hint">Er komt al iemand, dus er is nog plek voor 1 persoon.</p>':'');
+}
+function zetPers(n,el){ keuzePers=n; el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('aan',b===el)); }
+
+function boekVenster(s){
+  open('<h3>Bezoek inplannen</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+', '+tijdTxt(s.uur)+'</p>'
+    + (s.boekingen.length?'<p class="hint">Er komt al: '+s.boekingen.map(x=>esc(x.voornaam)).join(', ')+'</p>':'')
+    + '<label for="naam">Je voornaam</label><input id="naam" type="text" autocomplete="given-name" maxlength="30" value="'+esc(opslag.get('naam'))+'">'
+    + persKeuze(s)
+    + '<label for="tel">Je mobiele nummer</label><div class="tel"><span>06</span><input id="tel" type="tel" inputmode="numeric" autocomplete="tel" maxlength="12" placeholder="12345678" value="'+esc(opslag.get('tel'))+'"></div>'
+    + '<p class="hint">Hiermee kun je je bezoek later wijzigen. Alleen de familie ziet je nummer.</p>'
+    + '<p class="fout" id="fout"></p><div class="rij"><button class="groot" id="ok" onclick="boek(\''+s.datum+'\','+s.uur+')">Inplannen</button>'
+    + '<button class="groot licht" onclick="sluit()">Terug</button></div>');
+}
+
+async function boek(d,u){
+  const naam = document.getElementById('naam').value.trim(), t = tel8(document.getElementById('tel').value), f = document.getElementById('fout');
+  if(!naam) return f.textContent='Vul je voornaam in.';
+  if(t.length!==8) return f.textContent='Vul de 8 cijfers na 06 in.';
+  const ok = document.getElementById('ok'); ok.disabled = true; f.textContent='';
+  try{
+    const r = await rpc('bezoek_boek', {p_datum:d, p_uur:u, p_voornaam:naam, p_personen:keuzePers, p_tel:t});
+    if(!r.ok){ f.textContent = r.fout; ok.disabled=false; laad(); return; }
+    opslag.set('naam', naam); opslag.set('tel', t);
+    open('<div class="goed"><div class="vink">✓</div><h3>Ingepland!</h3><p class="wanneer">'+esc(naam)+', je komt '+esc(dagTxt(d,true))+' om '+uurTxt(u)+(keuzePers>1?' met 2 personen':'')+'.</p></div><button class="groot" onclick="sluit()">Klaar</button>');
+    laad();
+  }catch(e){ f.textContent = e.message; ok.disabled=false; }
+}
+
+/* Mijn bezoek */
+function openMijn(){
+  open('<h3>Mijn bezoek</h3><p class="wanneer">Vul het mobiele nummer in waarmee je hebt ingepland.</p>'
+    + '<div class="tel"><span>06</span><input id="tel" type="tel" inputmode="numeric" maxlength="12" placeholder="12345678" value="'+esc(opslag.get('tel'))+'"></div>'
+    + '<p class="fout" id="fout"></p><div class="rij"><button class="groot" onclick="zoekMijn()">Zoek mijn bezoek</button><button class="groot licht" onclick="sluit()">Terug</button></div>');
+}
+async function zoekMijn(){
+  const t = tel8(document.getElementById('tel').value), f = document.getElementById('fout');
+  if(t.length!==8) return f.textContent='Vul de 8 cijfers na 06 in.';
+  try{
+    const lijst = await rpc('bezoek_mijn', {p_tel:t});
+    opslag.set('tel', t);
+    if(!lijst.length){ f.textContent='Geen geplande bezoeken gevonden voor dit nummer.'; return; }
+    window._mijn = lijst; window._tel = t;
+    open('<h3>Mijn bezoek</h3>' + lijst.map((b,i) =>
+      '<div class="item"><div class="kop">'+esc(dagTxt(b.datum,true))+'</div><div>'+tijdTxt(b.uur)+' · '+esc(b.voornaam)+(b.personen>1?' (2 personen)':'')+'</div>'
+      + '<div class="knoppen"><button onclick="startVerplaats('+i+')">Verplaatsen</button><button class="rood" onclick="afzeggen('+i+',this)">Afzeggen</button></div></div>').join('')
+      + '<div class="rij"><button class="groot licht" onclick="sluit()">Sluiten</button></div>');
+  }catch(e){ f.textContent = e.message; }
+}
+async function afzeggen(i, el){
+  const b = window._mijn[i];
+  if(!confirm('Bezoek van '+dagTxt(b.datum,true)+' om '+uurTxt(b.uur)+' afzeggen?')) return;
+  el.disabled = true;
+  try{ await rpc('bezoek_afzeggen', {p_id:b.id, p_tel:window._tel}); await laad(); zoekMijnOpnieuw(); }
+  catch(e){ alert(e.message); el.disabled=false; }
+}
+function zoekMijnOpnieuw(){ openMijn(); zoekMijn(); }
+function startVerplaats(i){ verplaats = window._mijn[i]; sluit(); teken(); window.scrollTo({top:0,behavior:'smooth'}); }
+function kiesVerplaats(s){
+  const eigen = s.datum===verplaats.datum && s.uur===verplaats.uur ? verplaats.personen : 0;
+  if(s.geblokkeerd || s.cap - bezet(s) + eigen < 1) return;
+  open('<h3>Verplaatsen naar</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+', '+tijdTxt(s.uur)+'</p>'
+    + persKeuze(s, eigen) + '<p class="fout" id="fout"></p><div class="rij"><button class="groot" id="ok" onclick="verplaatsNu(\''+s.datum+'\','+s.uur+')">Verplaatsen</button><button class="groot licht" onclick="sluit()">Terug</button></div>');
+  if(s.cap>1 && verplaats.personen===2 && s.cap - bezet(s) + eigen >= 2) zetPers(2, V().querySelectorAll('.keuze button')[1]);
+}
+async function verplaatsNu(d,u){
+  const f = document.getElementById('fout'), ok = document.getElementById('ok'); ok.disabled = true;
+  try{
+    await rpc('bezoek_verplaats', {p_id:verplaats.id, p_tel:window._tel, p_datum:d, p_uur:u, p_personen:keuzePers});
+    verplaats = null;
+    open('<div class="goed"><div class="vink">✓</div><h3>Verplaatst!</h3><p class="wanneer">Je komt nu '+esc(dagTxt(d,true))+' om '+uurTxt(u)+'.</p></div><button class="groot" onclick="sluit()">Klaar</button>');
+    laad();
+  }catch(e){ f.textContent = e.message; ok.disabled=false; laad(); }
+}
+
+/* Beheer */
+function beheerVenster(s){
+  window._s = s;
+  const vrij = !s.geblokkeerd && bezet(s) < s.cap;
+  open('<h3>'+tijdTxt(s.uur)+'</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+'</p>'
+    + (s.boekingen.length ? s.boekingen.map((b,i) =>
+        '<div class="item"><div class="kop">'+esc(b.voornaam)+(b.personen>1?' (2 personen)':'')+'</div><div>'+esc(b.telefoon)+'</div>'
+        + '<div class="knoppen"><a class="bel" href="tel:'+esc(b.telefoon)+'">📞 Bellen</a><button class="rood" onclick="beheerAfzeggen('+i+',this)">Afzeggen</button></div></div>').join('')
+      : '<p class="hint">Nog niemand ingepland.</p>')
+    + '<p class="fout" id="fout"></p><div class="rij">'
+    + (s.geblokkeerd
+        ? '<button class="groot" onclick="vrijgeven()">Weer beschikbaar maken</button>'
+        : '<label for="reden">Reden (alleen jij ziet dit)</label><input id="reden" type="text" placeholder="bijv. dokter komt" maxlength="60"><button class="groot rood" onclick="blokkeer()">Geen bezoek op dit moment</button>'
+          + (s.boekingen.length?'<p class="hint">Wie al ingepland staat blijft staan. Bel diegene even.</p>':''))
+    + (vrij ? '<button class="groot licht" onclick="boekVenster(window._s)">Iemand inplannen</button>' : '')
+    + '<button class="groot licht" onclick="sluit()">Sluiten</button></div>');
+}
+async function blokkeer(){
+  const s = window._s;
+  try{ const r = await rpc('bezoek_blokkeer', {p_token:TOKEN, p_datum:s.datum, p_uur:s.uur, p_reden:document.getElementById('reden').value}); if(!r.ok) throw new Error(r.fout); sluit(); laad(); }
+  catch(e){ document.getElementById('fout').textContent = e.message; }
+}
+async function vrijgeven(){
+  const s = window._s;
+  try{ const r = await rpc('bezoek_vrijgeven', {p_token:TOKEN, p_datum:s.datum, p_uur:s.uur}); if(!r.ok) throw new Error(r.fout); sluit(); laad(); }
+  catch(e){ document.getElementById('fout').textContent = e.message; }
+}
+async function beheerAfzeggen(i, el){
+  const b = window._s.boekingen[i];
+  if(!confirm('Bezoek van '+b.voornaam+' afzeggen? Laat het diegene even weten.')) return;
+  el.disabled = true;
+  try{ await rpc('bezoek_beheer_afzeggen', {p_token:TOKEN, p_id:b.id}); await laad(); const s = zoek(window._s.datum, window._s.uur); s ? beheerVenster(s) : sluit(); }
+  catch(e){ alert(e.message); el.disabled=false; }
+}
+
+laad();
+setInterval(() => { if(!document.getElementById('achter').classList.contains('open')) laad(); }, 30000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) laad(); });
+</script>
+</body>
+</html>
