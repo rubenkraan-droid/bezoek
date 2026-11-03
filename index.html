@@ -132,7 +132,7 @@ function teken(){
     h += '<div class="dag"><h2>'+dagTxt(datum)+'</h2>';
     let vorige = null;
     lijst.forEach(s => {
-      const g = s.uur===9 ? 'Ochtend · 1 persoon' : 'Middag en avond · max. 2 personen';
+      const g = 'Max. 2 personen per uur';
       if(g!==vorige){ h += '<div class="groep">'+g+'</div>'; vorige=g; }
       const k = soort(s), b = bezet(s);
       const wie = s.geblokkeerd ? (TOKEN && s.reden ? esc(s.reden) : 'Geen bezoek mogelijk')
@@ -162,7 +162,6 @@ function tik(d,u){
 function persKeuze(s, extra){
   const vrij = s.cap - bezet(s) + (extra||0);
   keuzePers = 1;
-  if(s.cap===1) return '<p class="hint">In de ochtend kan er 1 persoon tegelijk komen.</p>';
   return '<label>Met hoeveel personen kom je?</label><div class="keuze">'
     + '<button type="button" class="aan" onclick="zetPers(1,this)">1 persoon</button>'
     + '<button type="button" '+(vrij<2?'disabled':'')+' onclick="zetPers(2,this)">2 personen</button></div>'
