@@ -34,6 +34,9 @@ h1{font-size:26px;margin:4px 0 2px}
 .vol{--c:var(--rood);--r:var(--rood-r)}
 .blok{--c:var(--grijs);--r:#9e9b94;background:repeating-linear-gradient(135deg,#eceae6 0 10px,#e3e1dc 10px 20px)}
 .slot[disabled]{cursor:default}
+.plek{font-size:15px;margin:-4px 4px 6px;color:var(--tekst)}
+.plek a{color:var(--knop)}
+.goed .plek,.venster>.plek,.item .plek{margin:8px 0 0}
 .groep{font-size:13px;color:var(--zacht);margin:12px 4px 0;text-transform:uppercase;letter-spacing:.04em}
 button.groot{display:block;width:100%;padding:15px;border:0;border-radius:12px;background:var(--knop);color:#fff;font-family:inherit;font-weight:700;font-size:18px;line-height:1.2;cursor:pointer}
 button.licht{background:#fff;color:var(--knop);border:2px solid var(--knop)}
@@ -110,6 +113,11 @@ function dagTxt(iso, kort){
   if(kort) return (diff===0?'vandaag ':diff===1?'morgen ':'') + lang;
   return diff===0 ? 'Vandaag <small>'+lang+'</small>' : diff===1 ? 'Morgen <small>'+lang+'</small>' : lang;
 }
+function plek(s){
+  if(!s || !s.locatie) return '';
+  const q = encodeURIComponent((s.locatie+' '+(s.adres||'')).trim());
+  return '<div class="plek">📍 <b>'+esc(s.locatie)+'</b>'+(s.adres?' · <a href="https://maps.google.com/?q='+q+'" target="_blank" rel="noopener">'+esc(s.adres)+'</a>':'')+'</div>';
+}
 const bezet = s => s.boekingen.reduce((a,b)=>a+b.personen,0);
 function soort(s){ if(s.geblokkeerd) return 'blok'; const b=bezet(s); return b===0?'vrij':b>=s.cap?'vol':'half'; }
 function tel8(v){ let d=String(v||'').replace(/\D/g,''); if(d.length===10 && d.startsWith('06')) d=d.slice(2); return d; }
@@ -129,10 +137,10 @@ function teken(){
   slots.forEach(s => (perDag[s.datum] ||= []).push(s));
   let h = '';
   for(const [datum, lijst] of Object.entries(perDag)){
-    h += '<div class="dag"><h2>'+dagTxt(datum)+'</h2>';
+    h += '<div class="dag"><h2>'+dagTxt(datum)+'</h2>' + plek(lijst[0]);
     let vorige = null;
     lijst.forEach(s => {
-      const g = 'Max. 2 personen per uur';
+      const g = 'Max. '+s.cap+(s.cap>1?' personen':' persoon')+' per uur';
       if(g!==vorige){ h += '<div class="groep">'+g+'</div>'; vorige=g; }
       const k = soort(s), b = bezet(s);
       const wie = s.geblokkeerd ? (TOKEN && s.reden ? esc(s.reden) : 'Geen bezoek mogelijk')
@@ -170,7 +178,7 @@ function persKeuze(s, extra){
 function zetPers(n,el){ keuzePers=n; el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('aan',b===el)); }
 
 function boekVenster(s){
-  open('<h3>Bezoek inplannen</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+', '+tijdTxt(s.uur)+'</p>'
+  open('<h3>Bezoek inplannen</h3><p class="wanneer">'+esc(dagTxt(s.datum,true))+', '+tijdTxt(s.uur)+'</p>'+plek(s)
     + (TOKEN && s.boekingen.length?'<p class="hint">Er komt al: '+s.boekingen.map(x=>esc(x.voornaam)).join(', ')+'</p>':'')
     + '<label for="naam">Je voornaam</label><input id="naam" type="text" autocomplete="given-name" maxlength="30" value="'+esc(opslag.get('naam'))+'">'
     + persKeuze(s)
@@ -189,7 +197,7 @@ async function boek(d,u){
     const r = await rpc('bezoek_boek', {p_datum:d, p_uur:u, p_voornaam:naam, p_personen:keuzePers, p_tel:t});
     if(!r.ok){ f.textContent = r.fout; ok.disabled=false; laad(); return; }
     opslag.set('naam', naam); opslag.set('tel', t);
-    open('<div class="goed"><div class="vink">✓</div><h3>Ingepland!</h3><p class="wanneer">'+esc(naam)+', je komt '+esc(dagTxt(d,true))+' om '+uurTxt(u)+(keuzePers>1?' met 2 personen':'')+'.</p></div><button class="groot" onclick="sluit()">Klaar</button>');
+    open('<div class="goed"><div class="vink">✓</div><h3>Ingepland!</h3><p class="wanneer">'+esc(naam)+', je komt '+esc(dagTxt(d,true))+' om '+uurTxt(u)+(keuzePers>1?' met 2 personen':'')+'.</p>'+plek(zoek(d,u))+'</div><button class="groot" onclick="sluit()">Klaar</button>');
     laad();
   }catch(e){ f.textContent = e.message; ok.disabled=false; }
 }
@@ -209,7 +217,7 @@ async function zoekMijn(){
     if(!lijst.length){ f.textContent='Geen geplande bezoeken gevonden voor dit nummer.'; return; }
     window._mijn = lijst; window._tel = t;
     open('<h3>Mijn bezoek</h3>' + lijst.map((b,i) =>
-      '<div class="item"><div class="kop">'+esc(dagTxt(b.datum,true))+'</div><div>'+tijdTxt(b.uur)+' · '+esc(b.voornaam)+(b.personen>1?' (2 personen)':'')+'</div>'
+      '<div class="item"><div class="kop">'+esc(dagTxt(b.datum,true))+'</div><div>'+tijdTxt(b.uur)+' · '+esc(b.voornaam)+(b.personen>1?' (2 personen)':'')+'</div>'+plek(b)
       + '<div class="knoppen"><button onclick="startVerplaats('+i+')">Verplaatsen</button><button class="rood" onclick="afzeggen('+i+',this)">Afzeggen</button></div></div>').join('')
       + '<div class="rij"><button class="groot licht" onclick="sluit()">Sluiten</button></div>');
   }catch(e){ f.textContent = e.message; }
@@ -235,7 +243,7 @@ async function verplaatsNu(d,u){
   try{
     await rpc('bezoek_verplaats', {p_id:verplaats.id, p_tel:window._tel, p_datum:d, p_uur:u, p_personen:keuzePers});
     verplaats = null;
-    open('<div class="goed"><div class="vink">✓</div><h3>Verplaatst!</h3><p class="wanneer">Je komt nu '+esc(dagTxt(d,true))+' om '+uurTxt(u)+'.</p></div><button class="groot" onclick="sluit()">Klaar</button>');
+    open('<div class="goed"><div class="vink">✓</div><h3>Verplaatst!</h3><p class="wanneer">Je komt nu '+esc(dagTxt(d,true))+' om '+uurTxt(u)+'.</p>'+plek(zoek(d,u))+'</div><button class="groot" onclick="sluit()">Klaar</button>');
     laad();
   }catch(e){ f.textContent = e.message; ok.disabled=false; laad(); }
 }
